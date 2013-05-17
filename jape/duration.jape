@@ -1,0 +1,342 @@
+/*
+*  
+* Filename: 		duration.jape
+* Author:			Phil Gooch
+* Copyright:		Phil Gooch 2011
+* Description:		Annotates time durations
+*					In cleanup we need to mung this to ISO 8601 extended format PnYn MnDTnH nMnS, 
+*					where nY represents the number of years, 
+*					nM the number of months, nD the number of days, 
+*					'T' is the date/time separator, nH the number of hours, 
+*					nM the number of minutes and nS the number of seconds.
+* Date created:		24/10/2009
+* This version:		0.3
+
+* 
+* 
+* Change history
+* ==========================================================================
+* Date				Version		Author		Description
+* ==========================================================================
+* 15/02/2011		0.2			PG			Added Age annotations
+*											use Tagger_Numbers for prior annotation of numbers
+* 18/05/2011		0.3			PG			Use NumberModifier, added Age
+*/
+
+
+
+Phase:	Time
+Input:  Split Token Number NumberModifier Lookup
+Options: control = appelt
+
+
+/* On rare occasions NumberTagger doesn't pick up single numbers */
+Rule: MatchDuration0
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+(
+  (
+  	{Token.kind == number}
+  ):number
+  ({Token.subkind == dashpunct})?
+  {Lookup.majorType == time, Lookup.minorType == duration}
+):duration
+(
+	(
+		{NumberModifier}
+	)?
+):mod1
+-->
+	:duration.Duration = {duration=:number.Token@string, type=:duration.Lookup.type, count=:duration.Lookup.count, prefix=:duration.Lookup.prefix, mod=:mod.NumberModifier.mod, mod=:mod1.NumberModifier.mod, rule="MatchDuration0"}
+	
+	
+	
+/* E.g. six weeks, 7 days */
+Rule: MatchDuration1
+(
+  (
+  	{Number}
+  ):number
+  (
+  	{Token.subkind == dashpunct} |
+  	{Token.kind == word}
+  )?
+  {Lookup.majorType == time, Lookup.minorType == duration}
+):duration
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:duration.Duration = {duration=:number.Number.value, type=:duration.Lookup.type, count=:duration.Lookup.count, prefix=:duration.Lookup.prefix, mod=:number.Number.mod, mod=:mod.NumberModifier.mod, rule="MatchDuration1"}
+
+
+/* E.g. during the day, in most of the next week */
+Rule: MatchDurationContinuous
+{Token.category == IN}
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+(
+  {Token.category == DT}
+  ({Lookup.majorType == temporal_relation} | {Lookup.majorType == date, Lookup.minorType == day})?
+  ({Lookup.majorType == time, Lookup.minorType == duration}):t
+):duration
+({!Token.category =~ "^NN", !Token.kind == word})
+-->
+	:duration.Duration = {type=:t.Lookup.type, count=:t.Lookup.count, prefix=:t.Lookup.prefix, mod=:mod.NumberModifier.mod, rule="MatchDurationContinuous"}
+
+
+/* E.g this week, this morning */
+Rule: MatchThisWeek
+(
+	{Token.string ==~ "(?i)this"}
+	{Lookup.majorType == time, Lookup.minorType == duration}
+):duration
+({!Token.category =~ "^NN", !Token.kind == word})
+-->
+	:duration.Duration = {type=:duration.Lookup.type, count=:duration.Lookup.count, prefix=:duration.Lookup.prefix, rule="MatchThisWeek"}
+
+
+
+/* E.g. during that period - will be coreferenced against most recent antecedent Duration */
+Rule: MatchRelativeDurationDefiniteDescriptor
+{Token.category == IN}
+({Token.category == DT})?
+(
+	{Token.string ==~ "(?i)this|that|which|these|present|current"}
+	{Token.string ==~ "(?i)period(s)?"}
+	(
+		{Token.string ==~ "(?i)of"}
+		{Token.string ==~ "(?i)time"}
+	)?	
+):dt
+-->
+	:dt.Duration-Coref = {rule="MatchRelativeDurationDefiniteDescriptor"}
+
+
+
+/* E.g. overnight */
+Rule: MatchDurationSpecial
+(
+  {Lookup.majorType == time, Lookup.minorType == duration, Lookup.rel == special}
+):duration
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:duration.Duration = {type=:duration.Lookup.type, count=:duration.Lookup.count, prefix=:duration.Lookup.prefix, mod=:mod.NumberModifier.mod, rule="MatchDurationSpecial"}
+	
+	
+	
+/* E.g. 21-27 days, 3-4-week period, 4 more days */
+Rule: MatchDurationRange
+(
+  (
+  	{Number}
+  ):num1
+  (
+  	{Token.subkind == dashpunct}  |
+  	{Token.category == TO}
+  ) 
+  (
+  	{Number}
+  ):num2
+  (
+  	{Token.subkind == dashpunct} |
+  	{Token.kind == word}
+  )?
+  {Lookup.majorType == time, Lookup.minorType == duration}
+):duration
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:duration.Duration = {duration=:num1.Number.value, low=:num1.Number.value, high=:num2.Number.value, type=:duration.Lookup.type, count=:duration.Lookup.count, prefix=:duration.Lookup.prefix, mod="APPROX", mod=:num1.Number.mod, mod=:mod.NumberModifier.mod, rule="MatchDurationRange"}
+
+
+
+
+/* E.g. six-week-old child */
+Rule: MatchAge1
+Priority: 100
+(
+  (
+  	{Number} |
+  	{Lookup.majorType == time, Lookup.minorType == age, Lookup.type == deid_prefix}
+  )
+  ({Token.subkind == dashpunct})?
+  (
+  	{Token contains {Lookup.minorType == duration}, Token.string =~ "old" } |
+  	{Token.string == "yo"} |
+  	(	{Token.string == "y"}
+  		{Token.string == "/"}
+  		{Token.string == "o"}
+  	) |
+  	{Token.string == "mo"} |
+  	(
+  		{Lookup.minorType == duration}
+  		({Token.subkind == dashpunct})?
+  		{Token.string == "old"}
+  	)
+  ):bit
+):age
+-->
+	:age.Age = {age=:age.Number.value, type=:bit.Lookup.type, count=:bit.Lookup.count, prefix=:bit.Lookup.prefix, rule="MatchAge1"}
+	
+	
+	
+/* E.g. aged 10 years */
+Rule: MatchAge2
+(
+  (
+    {Lookup.majorType == time, Lookup.minorType == age, Lookup.type == prefix}
+  )
+  ({NumberModifier})?
+  (
+  	{Number}
+  	({Lookup.majorType == time, Lookup.minorType == duration})?
+  ):bit
+):age
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:age.Age = {age=:age.Number.value, type=:bit.Lookup.type, count=:bit.Lookup.count, prefix=:bit.Lookup.prefix, mod=:mod.NumberModifier.mod, mod=:age.Number.mod, rule="MatchAge2"}
+	
+	
+	
+/* E.g. aged 10-12 years */
+Rule: MatchAge3
+(
+  (
+	{Lookup.majorType == time, Lookup.minorType == age, Lookup.type == prefix}
+  )
+  ({NumberModifier})?
+  (
+  	{Number}
+  ):num1
+  (
+  	{Token.subkind == dashpunct}  |
+  	{Token.category == TO}
+  ) 
+  (
+  	{Number}
+  ):num2
+  ({Lookup.majorType == time, Lookup.minorType == duration}):bit
+):age
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:age.Age = {type=:bit.Lookup.type, count=:bit.Lookup.count, prefix=:bit.Lookup.prefix, low=:num1.Number.value, high=:num2.Number.value, mod=:mod.NumberModifier.mod, mod=:num1.Number.mod, rule="MatchAge3"}
+	
+	
+	
+/* E.g. 10 years of age */
+Rule: MatchAge4
+(
+  (
+  	{Number}
+  	{Lookup.majorType == time, Lookup.minorType == duration}
+  ):bit
+  {Lookup.majorType == time, Lookup.minorType == age, Lookup.type == suffix}
+):age
+-->
+	:age.Age = {age=:bit.Number.value, type=:bit.Lookup.type, count=:bit.Lookup.count, prefix=:bit.Lookup.prefix, rule="MatchAge4", mod=:age.Number.mod}
+	
+
+
+/* E.g. 10-12 years of age */
+Rule: MatchAge5
+(
+  (
+  	{Number}
+  ):num1
+  (
+  	{Token.subkind == dashpunct}  |
+  	{Token.category == TO}
+  ) 
+  (
+  	{Number}
+  ):num2
+  ({Lookup.majorType == time, Lookup.minorType == duration}):bit
+  {Lookup.majorType == time, Lookup.minorType == age, Lookup.type == suffix}
+):age
+-->
+	:age.Age = {type=:bit.Lookup.type, count=:bit.Lookup.count, prefix=:bit.Lookup.prefix, low=:num1.Number.value, high=:num2.Number.value, rule="MatchAge5", mod=:age.Number.mod}
+	
+	
+/* E.g. 10 months to 2 years of age */
+Rule: MatchAge6
+(
+  (
+  	{Number}
+  ):num1
+  ({Lookup.majorType == time, Lookup.minorType == duration}):bit1
+  (
+  	{Token.subkind == dashpunct}  |
+  	{Token.category == TO}
+  ) 
+  (
+  	{Number}
+  ):num2
+  ({Lookup.majorType == time, Lookup.minorType == duration}):bit2
+  {Lookup.majorType == time, Lookup.minorType == age, Lookup.type == suffix}
+):age
+-->
+	:age.Age = {type1=:bit1.Lookup.type, count1=:bit1.Lookup.count, prefix1=:bit1.Lookup.prefix, type2=:bit2.Lookup.type, count2=:bit2.Lookup.count, prefix2=:bit2.Lookup.prefix, low=:num1.Number.value, high=:num2.Number.value, rule="MatchAge6", mod=:age.Number.mod}
+	
+	
+/* E.g. At 21 you ... */
+Rule: MatchAge6
+{Token.string ==~ "(?i)at|by|from"}
+({Token.category == DT})?
+(
+  (
+    {Lookup.majorType == time, Lookup.minorType == age, Lookup.type == prefix}
+  )?
+  (
+  	{Number, Token.string ==~ "(1[0-2][0-9])|([1-9]{1,2})"}
+  	({Lookup.majorType == time, Lookup.minorType == duration})?
+  ):bit
+):age
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+({Token.string ==~ "(?i)you|he|she"} | {Token.category =~ "^NNP"})
+-->
+	:age.Age = {age=:age.Number.value, type=:bit.Lookup.type, count=:bit.Lookup.count, prefix=:bit.Lookup.prefix, mod=:mod.NumberModifier.mod, mod=:age.Number.mod, rule="MatchAge6"}
+
+	
+/* E.g. his early thirties */
+Rule: MatchAge7
+{Token.string ==~ "(?i)his|her|my|your|our"}
+(
+  (({Lookup.majorType == temporal_relation})?):mod
+  {Lookup.majorType == time, Lookup.minorType == age_range}
+):age
+-->
+	:age.Age = {age=:age.Lookup.age, mod=:mod.Lookup.type}
+	
+
+
+	
+
+

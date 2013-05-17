@@ -1,0 +1,41 @@
+Imports: {
+	import static gate.Utils.*;
+	import java.io.*;
+}
+
+
+Phase:	TimexFixup
+Input:  Date Duration Time Frequency
+Options: control = appelt
+
+
+Rule: MatchDate
+(
+	{Date}
+):evt
+-->
+	:evt.TIMEX3 = {val=:evt.Date.val, text=:evt@string, mod="NA", mod=:evt.Date.mod, type=DATE}
+	
+
+Rule: MatchDuration
+(
+	{Duration, Duration notWithin Date-Rel}
+):evt
+-->
+	:evt.TIMEX3 = {val=:evt.Duration.val, text=:evt@string, mod="NA", mod=:evt.Duration.mod, type=DURATION}
+
+
+Rule: MatchTime
+(
+	{Time}
+):evt
+-->
+	:evt.TIMEX3 = {val=:evt.Time.val, text=:evt@string, mod="NA", mod=:evt.Time.mod, type=TIME}
+	
+	
+Rule: MatchFrequency
+(
+	{Frequency}
+):evt
+-->
+	:evt.TIMEX3 = {val=:evt.Frequency.val, text=:evt@string, mod="NA", mod=:evt.Frequency.mod, type=FREQUENCY}

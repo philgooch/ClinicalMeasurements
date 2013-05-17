@@ -1,0 +1,102 @@
+/*
+*  
+* Filename: 		value_modifier.jape
+* Author:			Phil Gooch
+* Copyright:		Phil Gooch
+* Description:		Annotates 'no more than {Number}'  etc
+*				
+*
+* Date created:		20/01/2011
+* This version:		0.1
+* 
+* 
+* Change history
+* ==========================================================================
+* Date				Version			Author				Description
+* ==========================================================================
+* 
+*/
+
+Imports: {
+	import static gate.Utils.*;
+}
+
+
+Phase:	ValueModifier
+Input:  Split Token Lookup Number
+Options: control = appelt
+
+
+
+
+Rule: MatchPosModifier1
+(
+	{Number}
+	({Lookup})?
+):num
+(
+	{Token.string ==~"(?i)or"}
+	{Lookup.majorType == value_modifier}
+):mod
+-->
+//	:mod.NumberModifier = {mod=:mod.Lookup.orpos}
+:mod {
+	AnnotationSet numAS = bindings.get("num");
+	String mod = (String)modAnnots.get("Lookup").iterator().next().getFeatures().get("orpos");
+	FeatureMap fm = numAS.iterator().next().getFeatures();
+	fm.put("mod", mod);
+	
+	FeatureMap features = Factory.newFeatureMap();
+	features.put("mod", mod);
+	outputAS.add(modAnnots.firstNode(), modAnnots.lastNode(),"NumberModifier", features);
+}
+
+
+Rule: MatchPosModifier2
+(
+	{Lookup.majorType == value_modifier}
+	({Token.string ==~"(?i)than"})?
+):mod
+(
+	{Number}
+):num
+-->
+//	:mod.NumberModifier = {mod=:mod.Lookup.pos}
+:mod {
+	AnnotationSet numAS = bindings.get("num");
+	String mod = (String)modAnnots.get("Lookup").iterator().next().getFeatures().get("pos");
+	FeatureMap fm = numAS.iterator().next().getFeatures();
+	fm.put("mod", mod);
+	
+	FeatureMap features = Factory.newFeatureMap();
+	features.put("mod", mod);
+	outputAS.add(modAnnots.firstNode(), modAnnots.lastNode(),"NumberModifier", features);
+}
+	
+	
+Rule: MatchNegModifier
+(
+	(
+		{Token.string ==~"(?i)no"} |
+		{Token.string ==~"(?i)not"} |
+		{Token.string ==~"(?i)never"} |
+		{Token.string ==~"(?i)any"}
+	)
+	{Lookup.majorType == value_modifier}
+	({Token.string ==~"(?i)than"})?
+):mod
+(
+	{Number}
+):num
+-->
+//	:mod.NumberModifier = {mod=:mod.Lookup.neg}
+:mod {
+	AnnotationSet numAS = bindings.get("num");
+	String mod = (String)modAnnots.get("Lookup").iterator().next().getFeatures().get("neg");
+	FeatureMap fm = numAS.iterator().next().getFeatures();
+	fm.put("mod", mod);
+	
+	FeatureMap features = Factory.newFeatureMap();
+	features.put("mod", mod);
+	outputAS.add(modAnnots.firstNode(), modAnnots.lastNode(),"NumberModifier", features);
+}

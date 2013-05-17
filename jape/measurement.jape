@@ -1,0 +1,184 @@
+/*
+*  
+* Filename: 		measurement.jape
+* Author:			Phil Gooch
+* Copyright:		Phil Gooch 2011
+* Description:		Annotates number + Lookup to give valued numbers with units/types
+* Date created:		05/11/2009
+* This version:		0.4
+* 
+* 
+* Change history
+* ==========================================================================
+* Date				Version			Author			Description
+* ==========================================================================
+* 15/02/2011		0.2				PG				Use output of Tagger_Numbers
+* 10/05/2011		0.3				PG				Annotate with Measurement rather than Value
+* 18/05/2011		0.4				PG				Use NumberModifier
+*/
+
+
+Phase:	Measurement
+Input:  Split Token Number NumberModifier Lookup
+Options: control = appelt
+
+MACRO: RATIO
+(
+	(
+  		(
+  			{Token.string == "/"}
+  			{Lookup.majorType == units}
+  		)+
+  	) |
+  	(
+  		(
+  			{Lookup.majorType == units}
+  			{Token.string == "-1"}
+  		)+
+  	)
+)
+
+Rule: MatchSIMeasurement
+(
+  (
+  	{Number}
+  ):num
+  (
+  	{Lookup.majorType == units}
+  	({Token.string == "-1"})?
+  ):unit
+):val
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:val.Measurement = {type=:unit.Lookup.minorType, unit=:unit.Lookup.unit, modifier=:unit.Token.string, number=:num.Number.value, mod=:num.Number.mod, mod=:mod.NumberModifier.mod, rule="MatchSIMeasurement" }
+
+
+/* e.g. 23-25 mg */
+Rule: MatchSIMeasurementRange
+(
+  (
+  	{Number}
+  ):num1
+  (
+  	{Token.subkind == dashpunct}  |
+  	{Token.category == TO}
+  ) 
+  (
+  	{Number}
+  ):num2
+  (
+  	{Lookup.majorType == units}
+  	({Token.string == "-1"})?
+  ):unit
+):val
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:val.Measurement = {type=:unit.Lookup.minorType, unit=:unit.Lookup.unit, modifier=:unit.Token.string, low=:num1.Number.value, high=:num2.Number.value, mod=:num1.Number.mod, mod=:mod.NumberModifier.mod, rule="MatchSIMeasurementRange" }
+
+
+
+/*
+* Units of ratio e.g. 23 mg/day, 19 g l-1
+*/
+Rule: MatchSIMeasurementRatio
+(
+  (
+  	{Number}
+  ):num
+  (
+  	{Lookup.majorType == units}
+  ):unit1
+  (
+  	(RATIO)
+  ):unit2
+):val
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:val.Measurement = {type=:unit1.Lookup.minorType, unit1=:unit1.Lookup.unit, unit2=:unit2.Lookup.unit, number=:num.Number.value, mod=:num.Number.mod, mod=:mod.NumberModifier.mod, rule="MatchSIMeasurementRatio" }
+
+
+/* e.g 23-25 mg/day */
+Rule: MatchSIMeasurementRatioRange
+(
+  (
+  	{Number}
+  ):num1
+  (
+  	{Token.subkind == dashpunct}  |
+  	{Token.category == TO}
+  ) 
+  (
+  	{Number}
+  ):num2
+  (
+  	{Lookup.majorType == units}
+  ):unit1
+  (
+  	(RATIO)
+  ):unit2
+):val
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:val.Measurement = {type=:unit1.Lookup.minorType, unit1=:unit1.Lookup.unit, unit2=:unit2.Lookup.unit, low=:num1.Number.value, high=:num2.Number.value, mod=:num1.Number.mod, mod=:mod.NumberModifier.mod, rule="MatchSIMeasurementRatioRange" }
+
+
+/* e.g. 23 % */
+Rule: MatchPercent
+(
+  (
+  	{Number}
+  ):num
+  (
+  	{Lookup.majorType == symbols, Lookup.minorType == maths, Lookup.unit == "%"}
+  ):unit
+):val
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:val.Measurement = {type=:unit.Lookup.minorType, unit=:unit.Lookup.unit, number=:num.Number.value, mod=:num.Number.mod, mod=:mod.NumberModifier.mod, rule="MatchPercent" }
+	
+
+/* e.g. 23-25 % */	
+Rule: MatchPercentRange
+(
+  (
+  	{Number}
+  ):num1
+  (
+  	{Token.subkind == dashpunct}  |
+  	{Token.category == TO}
+  ) 
+  (
+  	{Number}
+  ):num2
+  (
+  	{Lookup.majorType == symbols, Lookup.minorType == maths, Lookup.unit == "%"}
+  ):unit
+):val
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:val.Measurement = {type=:unit.Lookup.minorType, unit=:unit.Lookup.unit, low=:num1.Number.value, high=:num2.Number.value, mod=:num1.Number.mod, mod=:mod.NumberModifier.mod, rule="MatchPercentRange" }
+

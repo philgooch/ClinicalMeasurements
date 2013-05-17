@@ -1,0 +1,258 @@
+/* Adds the relevant date to time, adds P1D etc to Duration and Frequency annotations */
+
+Imports: {
+	import static gate.Utils.*;
+	import java.io.*;
+}
+
+
+Phase:	DateTimeFixup
+Input:  Split Time Date Duration Frequency
+Options: control = appelt
+
+Rule: MatchDateTime
+(
+	(
+		{Date}
+		{Time}
+	) | 
+	(
+		{Time}
+		{Date}
+	)
+):t
+-->
+:t {
+	Annotation tm = tAnnots.get("Time").iterator().next();
+	Annotation dt = tAnnots.get("Date").iterator().next();
+	
+	String baseYear = (String)doc.getFeatures().get("baseYear");
+	if (baseYear == null) {
+		baseYear = "";
+	}
+	
+	FeatureMap fm = dt.getFeatures();
+	String val = (String)fm.get("val");
+	String day = (String)fm.get("day");
+	if (day == null) day = "";
+	String month = (String)fm.get("month");
+	if (month == null) month = "";
+	String year = (String)fm.get("year");
+	if (year == null) year = baseYear;
+	 
+	if (year.matches("[2-9][0-9]")) {
+		year = "19" + year;
+	} else if (year.matches("[0-1][0-9]")) {
+		year = "20" + year;
+	}
+	if (day.matches("[0-9]")) {
+		day = "0" + day;
+	}
+	if (month.matches("[0-9]")) {
+		month = "0" + month;
+	}
+	
+	String date = "";
+	if (val == null) {
+		date = year + "-" + month + "-" + day;
+	} else {
+		date = val;
+	}
+	while ( date.endsWith("-") ) {
+		date = date.substring(0, date.length() - 1);
+	}	
+	fm.put("val", date);
+	FeatureMap tfm = tm.getFeatures();
+	String type = (String)tfm.get("type");
+	String tmpH = (String)tfm.get("hour");
+	String minute = (String)tfm.get("minute");
+	if ( tmpH != null && minute != null ) {
+		try {
+			int hour = Integer.parseInt( tmpH );
+			if ( type != null && type.equals("pm") ) {
+				if (hour < 12) { hour = hour + 12; }
+			}
+		tfm.put("val", date + "T" + String.format("%02d", hour) + ":" + minute);
+		fm.put("val", tfm.get("val") );
+		} catch (NumberFormatException ne) {
+			//
+		}			
+	}
+	
+}
+
+
+Rule: MatchTime
+(
+	{Time}
+):t
+-->
+:t {
+	String dt = (String)doc.getFeatures().get("ADMISSION");
+	Annotation tm = tAnnots.iterator().next();
+	if ( dt != null ) {
+		FeatureMap fm = tm.getFeatures();
+		String type = (String)fm.get("type");
+		String tmpH = (String)fm.get("hour");
+		String minute = (String)fm.get("minute");
+		if ( tmpH != null && minute != null ) {
+			try {
+				int hour = Integer.parseInt( tmpH );
+				if ( type != null && type.equals("pm") ) {
+					hour = hour + 12;
+				}
+			fm.put("val", dt + "T" + String.format("%02d", hour) + ":" + minute);
+			} catch (NumberFormatException ne) {
+				//
+			}			
+		}
+	}
+}
+	
+	
+Rule: MatchDate
+(
+	{Date}
+):d
+-->
+:d {
+	String baseYear = (String)doc.getFeatures().get("baseYear");
+	if (baseYear == null) {
+		baseYear = "";
+	}
+	Annotation dt = dAnnots.iterator().next();
+	FeatureMap fm = dt.getFeatures();
+	String val = (String)fm.get("val");
+	String day = (String)fm.get("day");
+	if (day == null) day = "";
+	String month = (String)fm.get("month");
+	if (month == null) month = "";
+	String year = (String)fm.get("year");
+	if (year == null) {
+		/* For short dates, need to figure out if we're in admission year or discharge year */
+		year = baseYear;
+	}
+	 
+	if (year.matches("[2-9][0-9]")) {
+		year = "19" + year;
+	} else if (year.matches("[0-1][0-9]")) {
+		year = "20" + year;
+	}
+	if (day.matches("[0-9]")) {
+		day = "0" + day;
+	}
+	if (month.matches("[0-9]")) {
+		month = "0" + month;
+	}
+	
+	String date = "";
+	if (val == null) {
+		date = year + "-" + month + "-" + day;
+	} else {
+		date = val;
+	}
+	while ( date.endsWith("-") ) {
+		date = date.substring(0, date.length() - 1);
+	}	
+	fm.put("val", date);
+}
+
+
+Rule: MatchDuration
+(
+	{Duration}
+):d
+-->
+:d {
+	Annotation dur = dAnnots.iterator().next();
+	FeatureMap fm = dur.getFeatures();
+	String type = (String)fm.get("type");
+	String prefix = (String)fm.get("prefix");
+	String tmp1 = (String)fm.get("count");
+	Object tmp = fm.get("duration");
+	int duration = 1;
+	int count = 1;
+	if (tmp instanceof String) {
+		duration = Integer.parseInt((String)tmp);
+	} else if (tmp instanceof Double) {
+		duration = (int)((Double)tmp).doubleValue();
+	}
+	Object hi = fm.get("high");
+	Object lo = fm.get("low");
+	int high = 0; int low = 0;
+	if (hi instanceof String) {
+		high = Integer.parseInt((String)hi);
+	} else if (hi instanceof Double) {
+		high = (int)((Double)hi).doubleValue();
+	}
+	if (lo instanceof String) {
+		low = Integer.parseInt((String)lo);
+	} else if (lo instanceof Double) {
+		low = (int)((Double)lo).doubleValue();
+	}
+	if (hi != null && lo != null) {
+		duration = (high + low) / 2;
+	}
+	
+	if (tmp1 != null) {
+		try {
+			count = Integer.parseInt( tmp1 );
+		} catch (NumberFormatException ne) {
+			count = 1;
+		}
+	}
+	String val = prefix + (count * duration) + type;
+	
+	fm.put("val", val);
+}
+
+
+
+Rule: MatchFrequency
+(
+	{Frequency}
+):f
+-->
+:f {
+	Annotation freq = fAnnots.iterator().next();
+	FeatureMap fm = freq.getFeatures();
+	String type = (String)fm.get("type");
+	if (type == null) {
+		type = "";
+	}
+	String prefix = (String)fm.get("prefix");
+	if (prefix == null) {
+		prefix = "R";
+	} else if (prefix.startsWith("PT")) {
+		prefix = "RPT";
+	} else if (prefix.startsWith("P")) {
+		prefix = "RP";
+	}
+	String tmp1 = (String)fm.get("count");
+	Object tmp = fm.get("repeat");
+	int repeat = 1;
+	int count = 0;
+	int duration = 1;
+	if (tmp instanceof String) {
+		repeat = Integer.parseInt((String)tmp);
+	} else if (tmp instanceof Double) {
+		repeat = (int)((Double)tmp).doubleValue();
+	}
+	tmp = fm.get("duration");
+	if (tmp instanceof String) {
+		duration = Integer.parseInt((String)tmp);
+	} else if (tmp instanceof Double) {
+		duration = (int)((Double)tmp).doubleValue();
+	}
+	if (tmp1 != null) {
+		count = Integer.parseInt( tmp1 );
+	}
+	int ival = 1;
+	if (count == 0 ) {
+		ival = repeat;
+	} else {
+		ival = ((count*duration) / repeat);
+	} 
+	String val = prefix + ival + type;
+	fm.put("val", val);
+}

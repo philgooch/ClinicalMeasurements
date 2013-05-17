@@ -1,0 +1,37 @@
+/*
+*  
+* Filename: 		number_vague.jape
+* Author:			Phil Gooch
+* Copyright:		Phil Gooch
+* Description:		Annotates vague numbers 'several', 'many' etc
+*				
+*
+* Date created:		04/08/2012
+* This version:		0.1
+* 
+* 
+* Change history
+* ==========================================================================
+* Date				Version			Author				Description
+* ==========================================================================
+* 
+*/
+
+Imports: {
+	import static gate.Utils.*;
+}
+
+
+Phase:	NumberVague
+Input:  Lookup
+Options: control = appelt
+
+
+
+Rule: MatchVagueNumber
+(
+	{Lookup.majorType == number_vague}
+):num
+-->
+	:num.Number = {value=:num.Lookup.count, mod="APPROX"}
+

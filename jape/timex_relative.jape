@@ -1,0 +1,91 @@
+/* Update relative dates to absolute dates based on relation to baseDate */
+
+Imports: {
+	import static gate.Utils.*;
+	import java.util.*;
+	import java.text.DateFormat;
+	import java.text.SimpleDateFormat;
+	import java.text.ParseException;
+	import java.io.*;
+}
+
+
+Phase:	TimexRelative
+Input:  Time-Rel Date-Rel Duration-Rel Duration
+Options: control = appelt
+
+
+Rule: MatchDateRel
+(
+	{Date-Rel}
+):d
+-->
+:d {
+	Annotation dt = dAnnots.get("Date-Rel").iterator().next();
+
+	FeatureMap dtFm = dt.getFeatures();
+	String interval = (String)dtFm.get("interval");
+	String rel = (String)dtFm.get("rel");
+	Object tmpCount = dtFm.get("count");
+	Object tmpDur = dtFm.get("duration");
+	
+	int duration = 1;
+	int count = 1;
+	
+	if (interval == null) {
+		interval = "D";
+	}
+	if (rel == null) {
+		rel = "after";
+	}
+	
+	
+	if (tmpCount instanceof String) {
+		count = Integer.parseInt((String)tmpCount);
+	} else if (tmpCount instanceof Double) {
+		count = (int)((Double)tmpCount).doubleValue();
+	}
+	if (tmpDur instanceof String) {
+		duration = Integer.parseInt((String)tmpDur);
+	} else if (tmpDur instanceof Double) {
+		duration = (int)((Double)tmpDur).doubleValue();
+	}
+	
+	String evtDt = (String)doc.getFeatures().get("baseDate");
+	
+	if (evtDt != null) {
+		DateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
+		Date eventDate;
+		try {
+			eventDate = (Date)formatter.parse(evtDt);
+			Calendar c = Calendar.getInstance();
+            c.setTime(eventDate);
+			int offset = count * duration;
+			int field = Calendar.DAY_OF_MONTH;
+			if ( interval.equals("H") ) {
+				field = Calendar.HOUR_OF_DAY;
+			} else if (interval.equals("Y") ) {
+				field = Calendar.YEAR;
+			} else if (interval.equals("M") ) {
+				field = Calendar.MONTH;
+			}
+			if ( rel.contains("before") ) {
+				offset = 0 - offset;
+			} else if ( rel.contains("after") ) {
+				// do nothing
+			} else {
+				// same
+				offset = 0;
+			}
+			c.add(field, offset);
+			
+			FeatureMap fm = Factory.newFeatureMap();
+			fm.putAll(dtFm);
+			fm.put("val", formatter.format(c.getTime()) );
+			outputAS.add(dAnnots.firstNode(), dAnnots.lastNode(), "Date", fm);
+		} catch(ParseException pe) {
+			System.err.println(pe);
+		}
+		
+	}
+}

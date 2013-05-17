@@ -1,0 +1,213 @@
+/*
+*  
+* Filename: 		time.jape
+* Author:			Phil Gooch
+* Copyright:		Phil Gooch 2009
+* Description:		Annotates time in 12-hour or 24-hour formats
+* Date created:		26/10/2009
+* This version:		0.1
+*
+* 
+* 
+* Change history
+* ==========================================================================
+* Date				Version			Author				Description
+* ==========================================================================
+* 
+*/
+
+
+Phase:	Time
+Input:  Split Token Lookup Day Number
+Options: control = appelt
+
+MACRO: IN_THE
+(
+	{Token.string ==~ "(?i)in"}
+  	{Token.string ==~ "(?i)the"}
+)
+
+MACRO: AT
+(
+	{Token.string ==~ "(?i)on"}
+)
+
+Rule: MatchOClock
+(
+	({Number}):hour
+	{Token.string ==~ "(?i)o.clock"}
+	(IN_THE)?
+    ({Lookup.majorType == time, Lookup.minorType == ampm})?:type
+):time
+-->
+	:time.Time = {hour=:hour.Number@string, minute="00", second="00", type=:type.Lookup.type, rule="MatchOClock"}
+
+
+/* E.g. 09.45 p.m. 10:34 a.m. */
+Rule: MatchAMPM
+(
+  ({Token.kind == number, Token.length <=2}):hour
+  (
+  	{Token.kind == punctuation, Token.string == ":"} | 
+  	{Token.kind == punctuation, Token.string == "."}
+  )
+  ({Token.kind == number, Token.length <=2}):minute
+  (
+  	{Token.kind == punctuation, Token.string == ":"} 
+  	({Token.kind == number, Token.length ==2}):second
+  )?
+  (IN_THE)?
+  ({Lookup.majorType == time, Lookup.minorType == ampm}):type
+):time
+-->
+	:time.Time = {hour=:hour.Token.string, minute=:minute.Token.string, second=:second.Token.string, type=:type.Lookup.type, rule="MatchAMPM"}
+	
+	
+/* E.g. At 10 am, at 10 in the evening */
+Rule: MatchAMPM2
+(
+  ({Token.kind == number, Token.length <=2}):hour
+  (IN_THE)?
+  ({Lookup.majorType == time, Lookup.minorType == ampm}):type
+):time
+-->
+	:time.Time = {hour=:hour.Token.string, minute="00", type=:type.Lookup.type, rule="MatchAMPM"}
+
+
+
+/* E.g. At noon, at sunrise */
+Rule: MatchNominalTime
+(
+  {Lookup.majorType == time, Lookup.minorType == ampm, Lookup.hour =~ "[0-9]"}
+):time
+-->
+	:time.Time = {hour=:time.Lookup.hour, minute="00", type=:time.Lookup.type, rule="MatchNominal"}
+	
+		
+
+/* E.g. 13:30 */
+Rule: Match24Hour
+({Token.category == IN } | {Token.category == CC })
+( {Lookup.majorType == value_modifier} )?
+(
+  ({Token.kind == number, Token.length ==2}):hour
+  ({Token.kind == punctuation, Token.string == ":"} | {Token.kind == punctuation, Token.string == "."})?
+  ({Token.kind == number, Token.length ==2}):minute
+  (
+  	{Token.kind == punctuation, Token.string == ":"} 
+  	({Token.kind == number, Token.length ==2}):second
+  )?
+):time
+{!Lookup.majorType == time, !Lookup.minorType == ampm}
+-->
+	:time.Time = {hour=:hour.Token.string, minute=:minute.Token.string, second=:second.Token.string, type="24hr", rule="Match24Hour"}
+
+
+
+/* Mon-Fri, 10-2; Tuesdays 11-4 */
+Rule: Match9To5
+{Day}
+({Token.kind == punctuation, Token.subkind == dashpunct})?
+({Day})?
+({Token.kind == punctuation, Token.string == ","} | (AT) )?
+(
+  ({Token.kind == number, Token.length <=2}):hour1
+):time1
+{Token.kind == punctuation, Token.subkind == dashpunct}
+(
+	({Token.kind == number, Token.length <=2}):hour2
+):time2
+-->
+	:time1.Time = {hour=:hour1.Token.string, minute="00", type="am", rule="Match9To5"}, 
+	:time2.Time = {hour=:hour2.Token.string, minute="00", type="pm", rule="Match9To5"}
+	
+	
+/* Fridays, 10-4.30; Mon-Fri 11-2.30 */
+Rule: Match9To430
+{Day}
+({Token.kind == punctuation, Token.subkind == dashpunct})?
+({Day})?
+({Token.kind == punctuation, Token.string == ","} | (AT) )?
+(
+  ({Token.kind == number, Token.length <=2}):hour1
+):time1
+{Token.kind == punctuation, Token.subkind == dashpunct}
+(
+	({Token.kind == number, Token.length <=2}):hour2
+	({Token.kind == punctuation, Token.string == ":"} | {Token.kind == punctuation, Token.string == "."})
+	({Token.kind == number, Token.length ==2}):minute2
+):time2
+-->
+	:time1.Time = {hour=:hour1.Token.string, minute="00", type="am", rule="Match9To430"}, 
+	:time2.Time = {hour=:hour2.Token.string, minute=:minute2.Token.string, type="pm", rule="Match9To430"}
+	
+	
+/* Fridays, 10.30-4; Mon-Fri 11.30-2 */
+Rule: Match930To5
+{Day}
+({Token.kind == punctuation, Token.subkind == dashpunct})?
+({Day})?
+({Token.kind == punctuation, Token.string == ","} | (AT) )?
+(
+  ({Token.kind == number, Token.length <=2}):hour1
+  ({Token.kind == punctuation, Token.string == ":"} | {Token.kind == punctuation, Token.string == "."})
+  ({Token.kind == number, Token.length ==2}):minute1
+):time1
+{Token.kind == punctuation, Token.subkind == dashpunct}
+(
+	({Token.kind == number, Token.length <=2}):hour2
+):time2
+-->
+	:time1.Time = {hour=:hour1.Token.string, minute=:minute1.Token.string, type="am", rule="Match930To5"}, 
+	:time2.Time = {hour=:hour2.Token.string, minute="00", type="pm", rule="Match930To5"}
+	
+	
+/* Fridays, 10.30-4.30; Mon-Fri 11.30-2.30 */
+Rule: Match930To530
+{Day}
+({Token.kind == punctuation, Token.subkind == dashpunct})?
+({Day})?
+({Token.kind == punctuation, Token.string == ","} | (AT) )?
+(
+  ({Token.kind == number, Token.length <=2}):hour1
+  ({Token.kind == punctuation, Token.string == ":"} | {Token.kind == punctuation, Token.string == "."})
+  ({Token.kind == number, Token.length ==2}):minute1
+):time1
+{Token.kind == punctuation, Token.subkind == dashpunct}
+(
+	({Token.kind == number, Token.length <=2}):hour2
+	({Token.kind == punctuation, Token.string == ":"} | {Token.kind == punctuation, Token.string == "."})
+	({Token.kind == number, Token.length ==2}):minute2
+):time2
+-->
+	:time1.Time = {hour=:hour1.Token.string, minute=:minute1.Token.string, type="am", rule="Match930To530"}, 
+	:time2.Time = {hour=:hour2.Token.string, minute=:minute2.Token.string, type="pm", rule="Match930To530"}
+	
+	
+
+  
+/* 4th hour */
+ Rule: MatchRelativeHour
+ (
+ 	(
+ 		{Lookup.majorType == date, Lookup.minorType == day}
+ 	):hour
+ 	({Token, !Number})?
+ 	{Token.string ==~ "(?i)hour|hrs|hr|h"}
+ ):dt
+-->
+  :dt.Time-Rel = {count=:hour.Lookup.day, interval="H", rule="MatchRelativeHour"}
+  
+
+/* 4th minute */
+Rule: MatchRelativeMinute
+ (
+ 	(
+ 		{Lookup.majorType == date, Lookup.minorType == day}
+ 	):min
+ 	({Token, !Number})?
+ 	{Token.string ==~ "(?i)minute(s)|min(s)"}
+ ):dt
+-->
+  :dt.Time-Rel = {count=:min.Lookup.day, interval="M" rule="MatchRelativeMinute"}
+  

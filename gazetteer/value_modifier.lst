@@ -1,0 +1,46 @@
+approx;pos=eq;neg=eq;orpos=eq;type=APPROX
+approximately;pos=eq;neg=eq;orpos=eq;type=APPROX
+or so;pos=eq;neg=eq;orpos=eq;type=APPROX
+about;pos=eq;neg=eq;orpos=eq;type=APPROX
+around;pos=eq;neg=eq;orpos=eq;type=APPROX
+over;pos=gt;neg=le;orpos=ge;type=MORE
+more;pos=gt;neg=le;orpos=ge;type=MORE
+greater;pos=gt;neg=le;orpos=ge;type=MORE
+larger;pos=gt;neg=le;orpos=ge;type=MORE
+longer;pos=gt;neg=le;orpos=ge;type=MORE
+bigger;pos=gt;neg=le;orpos=ge;type=MORE
+>;pos=gt;neg=le;type=MORE
+>=;pos=ge;neg=le;type=MORE
+≥;pos=ge;neg=le;type=MORE
+<;pos=lt;neg=gt;type=LESS
+<=;pos=le;neg=gt;type=LESS
+≤;pos=le;neg=gt;type=LESS
+higher;pos=gt;neg=le;orpos=ge;type=MORE
+over;pos=gt;neg=le;orpos=ge;type=MORE
+older;pos=gt;neg=le;orpos=ge;type=age;type=MORE
+above;pos=gt;neg=le;orpos=ge;type=MORE
+less;pos=lt;neg=ge;orpos=le;type=LESS
+smaller;pos=lt;neg=ge;orpos=le;type=LESS
+shorter;pos=lt;neg=ge;orpos=le;type=LESS
+fewer;pos=lt;neg=ge;orpos=le;type=LESS
+almost;pos=lt;neg=ge;orpos=le;type=LESS
+nearly;pos=lt;neg=ge;orpos=le;type=LESS
+most of;pos=lt;neg=ge;orpos=le;type=APPROX
+below;pos=lt;neg=ge;orpos=le;type=LESS
+younger;pos=lt;neg=ge;orpos=le;type=LESS
+under;pos=lt;neg=ge;orpos=le;type=LESS
+up to;pos=le;neg=gt;type=APPROX
+at least;pos=ge;neg=lt;type=APPROX
+at most;pos=le;neg=gt;type=APPROX
+in excess of;pos=ge;neg=lt;type=APPROX
+between;pos=ge;neg=le;type=MIDDLE
+within;pos=le;neg=gt;type=MIDDLE
+mid-;pos=gt;neg=le;orpos=ge;type=MIDDLE
+mid;pos=gt;neg=le;orpos=ge;type=MIDDLE
+middle;pos=gt;neg=le;orpos=ge;type=MIDDLE
+after;pos=gt;neg=le;orpos=ge;type=END
+later;pos=gt;neg=le;orpos=ge;type=MORE
+since;pos=gt;neg=le;orpos=ge;type=MORE
+before;pos=lt;neg=ge;orpos=le;type=LESS
+earlier;pos=lt;neg=ge;orpos=le;type=LESS
+sooner;pos=lt;neg=ge;orpos=le;type=LESS

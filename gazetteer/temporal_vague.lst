@@ -1,0 +1,69 @@
+/* all modifiers in the other _modifier.lst files have a degree of ambiguity with boundary values, e.g. 'less than four times a day' implies < 4 but could imply <= 4, and does it allow 0 ? */ 
+/* But this list is particularly vague - what is 'brief therapy' ? */
+/* GATE Morph analyzer doesn't do adverb forms of nouns, e.g. rarely -> rare */
+/* Not all of these are vague - e.g. always, never - perhaps we need a list of temporal modifiers and add a type attribute for ones that are vague? */
+/* These are often frequency or duration modifiers or expressions */
+again;type=definite
+almost
+almost always
+almost never
+already
+always;type=definite
+another;type=definite
+as soon as
+at the same time
+brief
+briefly
+continually
+continue
+continuous
+fast
+frequent
+frequently
+further
+in a few
+in a while
+infrequent
+infrequently
+intensive
+intermittent
+intermittently
+irregular
+irregularly
+lately
+lengthy
+long
+long term
+long-term
+nearly
+never;type=definite
+nowadays
+occasionally
+often
+periodic
+prolonged
+quickly
+rapid
+rapidly
+rare
+rarely
+recent
+recently
+regular
+regularly
+repeat
+repeated
+repeatedly
+short
+short term
+short-term
+slow
+slowly
+sometimes
+soon
+sporadic
+sporadically
+temporarily
+temporary
+usual
+usually

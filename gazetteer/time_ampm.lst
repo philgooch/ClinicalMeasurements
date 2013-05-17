@@ -1,0 +1,23 @@
+A M;type=am
+a.m.;type=am
+A.M.;type=am
+afternoon;type=pm
+am;type=am
+AM;type=am
+dawn;type=am;hour=05
+daytime;type=am
+day-time;type=am
+evening;type=pm
+midnight;type=pm;hour=00
+morning;type=am
+night-time;type=pm
+nighttime;type=pm
+noon;type=pm;hour=12
+P M;type=pm
+p.m.;type=pm
+P.M.;type=pm
+pm;type=pm
+PM;type=pm
+sunrise;type=am;hour=05
+sunset;type=pm;hour=19
+twilight;type=pm;hour=21

@@ -1,0 +1,40 @@
+/* Coreferences temporal expressions */
+
+Imports: {
+	import static gate.Utils.*;
+	import java.io.*;
+}
+
+
+Phase:	TimexCoref
+Input:  Time Date Duration Time-Coref Date-Coref Duration-Coref
+Options: control = all
+
+
+Rule: MatchDateCoref
+({Date}|{Time}):ant
+(
+	{Date-Coref}
+):d
+-->
+:d {
+	Annotation ant = bindings.get("ant").iterator().next();
+	FeatureMap fm = Factory.newFeatureMap();
+	fm.putAll(ant.getFeatures());
+	outputAS.add(dAnnots.firstNode(), dAnnots.lastNode(), "Date", fm);
+}
+
+
+
+Rule: MatchDurationCoref
+({Duration}):ant
+(
+	{Duration-Coref}
+):d
+-->
+:d {
+	Annotation ant = bindings.get("ant").iterator().next();
+	FeatureMap fm = Factory.newFeatureMap();
+	fm.putAll(ant.getFeatures());
+	outputAS.add(dAnnots.firstNode(), dAnnots.lastNode(), "Duration", fm);
+}

@@ -1,0 +1,137 @@
+/*
+*  
+* Filename: 		frequency.jape
+* Author:			Phil Gooch
+* Copyright:		Phil Gooch 2011
+* Description:		Annotates frequency durations
+*					
+* Date created:		10/05/2011
+* This version:		0.4
+
+* 
+* 
+* Change history
+* ==========================================================================
+* Date				Version		Author		Description
+* ==========================================================================
+* 10/05/2011		0.2			PG			Improved matching
+* 18/04/2011		0.3			PG			Use NumberModifier
+* 26/07/2011		0.4			PG			Use more Lookups
+*/
+
+
+
+Phase:	Time
+Input:  Split Token Number NumberModifier Duration Measurement Lookup Age
+Options: control = appelt
+
+
+/* E.g. 2 days/week */
+Rule: MatchFrequencyRatio
+(
+  	{Duration} | {Measurement}
+)
+(
+  (
+	  (
+		(
+			{Lookup.majorType == time, Lookup.minorType == cycle} | {Token.string == "/"} | {Token.string ==~ "(?i)a"}
+		)
+		({Number, !Age})?
+		{Lookup.majorType == time, Lookup.minorType == duration}
+	  ) |
+	  (
+		{Lookup.majorType == time, Lookup.minorType == frequency}
+	  ) 
+  )?:f
+):freq
+-->
+	:freq.Frequency = {rule="MatchFrequencyRatio", type=:freq.Lookup.type, count=:f.Lookup.count, duration=:f.Number.value, prefix=:f.Lookup.prefix}
+	
+
+/* E.g. Four times a day,  2-5 times per week */
+Rule: MatchFrequencyRatio2
+(
+  (
+  	{Number}
+  ):num1
+  (
+	  (
+		{Token.subkind == dashpunct}  |
+		{Token.category == TO}
+	  ) 
+	  (
+		{Number}
+	  )
+  )?:num2
+  {Token.string == "times"}
+  (
+	  (
+		(
+			{Lookup.majorType == time, Lookup.minorType == cycle} | {Token.string == "/"} | {Token.string ==~ "(?i)a"}
+		)
+		({Number, !Age})?
+		{Lookup.majorType == time, Lookup.minorType == duration}
+	  ) |
+	  (
+		{Lookup.majorType == time, Lookup.minorType == frequency}
+	  ) 
+  )?:f
+):freq
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:freq.Frequency = {rule="MatchFrequencyRatio2", low=:num1.Number.value, high=:num2.Number.value,  mod=:num1.Number.mod, mod=:mod.NumberModifier.mod, type=:freq.Lookup.type, count=:f.Lookup.count, repeat=:num1.Number.value, duration=:f.Number.value, prefix=:f.Lookup.prefix}
+	
+
+
+/* E.g. daily, twice daily, once a day, every 2 days */
+Rule: MatchFrequency
+(
+  (
+  	{Lookup.majorType == time, Lookup.minorType == repeat}
+  )?:rpt
+  (
+	(
+		(
+			{Lookup.majorType == time, Lookup.minorType == cycle} | {Token.string == "/"} | {Token.string ==~ "(?i)a"}
+		)
+		({Number, !Age})?
+		{Lookup.majorType == time, Lookup.minorType == duration}
+	) |
+	(
+		{Lookup.majorType == time, Lookup.minorType == frequency}
+	)
+  ):f
+):freq
+({!Token.category =~ "^NN", !Token.kind == word})
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:freq.Frequency = {rule="MatchFrequency", mod=:mod.NumberModifier.mod, type=:f.Lookup.type, count=:f.Lookup.count, repeat=:rpt.Lookup.count, duration=:f.Number.value, prefix=:f.Lookup.prefix}
+	
+
+
+
+
+/* E.g. once, twice */
+Rule: MatchFrequencyRepeatOnly
+(
+  (
+  	{Lookup.majorType == time, Lookup.minorType == repeat}
+  ):rpt
+):freq
+(
+	(
+		{NumberModifier}
+	)?
+):mod
+-->
+	:freq.Frequency = {rule="MatchFrequencyRepeat", mod=:mod.NumberModifier.mod, repeat=:rpt.Lookup.count, prefix="R"}
+	

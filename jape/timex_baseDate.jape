@@ -1,0 +1,46 @@
+Imports: {
+	import static gate.Utils.*;
+	import java.util.*;
+	import java.text.DateFormat;
+	import java.text.SimpleDateFormat;
+	import java.text.ParseException;
+	import java.io.*;
+}
+
+
+Phase:	DocumentDate
+Input: Date
+Options: control = once
+
+
+
+Rule: MatchDocumentDate
+(
+	{Date.day != "", Date.month !="", Date.year != ""}
+):d
+-->
+:d {
+	Annotation dt = dAnnots.iterator().next();
+	FeatureMap dtFm = dt.getFeatures();
+	FeatureMap docFm = doc.getFeatures();
+	
+	Calendar now = Calendar.getInstance();   // Get current date and time.
+	int currYear = now.get(Calendar.YEAR); 
+	int currMonth = now.get(Calendar.MONTH) + 1;
+	int currDay = now.get(Calendar.DATE);
+	
+	String baseYear = (String)dtFm.get("year") ;
+	if (baseYear == null) {
+		baseYear = Integer.toString(currYear);
+	}
+	String baseMonth = (String)dtFm.get("month") ;
+	if (baseMonth == null) {
+		baseMonth = Integer.toString(currMonth);
+	}
+	String baseDay = (String)dtFm.get("day");
+	if (baseDay == null) {
+		baseDay = Integer.toString(currDay);
+	}
+	docFm.put("baseYear", baseYear) ;
+	docFm.put("baseDate",  baseYear + "-" + baseMonth + "-" + baseDay) ;
+}

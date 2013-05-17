@@ -1,0 +1,28 @@
+Imports: {
+	import static gate.Utils.*;
+	import java.io.*;
+}
+
+
+Phase:	RelativeDate
+Input:  Split Token Lookup Date
+Options: control = appelt
+
+
+Rule: MatchRelativeDateDefiniteDescriptor
+(
+	{Token.string ==~ "(?i)this|that|these|present|current"}
+	{Token.string ==~ "(?i)date(s)|instance(s)|moment(s)?|occasion(s)?|period(s)?|time(s)?"}
+	(
+		{Token.string ==~ "(?i)of"}
+		{Token.string ==~ "(?i)time"}
+	)?	
+):dt
+-->
+:dt {
+	AnnotationSet dateAS = inputAS.get("Date");
+	if ( ! dateAS.isEmpty() ) {
+		List<Annotation> dateList = inDocumentOrder(dateAS);
+	}
+
+}

@@ -1,0 +1,4 @@
+age;type=prefix
+aged;type=prefix
+age of;type=prefix
+of age;type=suffix

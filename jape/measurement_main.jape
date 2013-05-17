@@ -1,0 +1,25 @@
+/*  
+* Filename: 			measurement_main.jape
+* Author:					Phil Gooch
+* Copyright:			Phil Gooch 2013
+* Description:		Generic JAPE rules files for temporal and quantity concepts
+*/
+
+MultiPhase:	Measurement
+Phases: 
+number_vague
+value_modifier
+measurement
+price
+duration
+frequency
+dayofweek
+date
+time
+/* Conversion to TIMEX */
+timex_baseDate
+timex_relative
+time_fixup
+timex_coref
+timex_modifier
+timex_fixup

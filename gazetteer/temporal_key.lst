@@ -1,0 +1,86 @@
+/* Each of these should be followed and/or preceded by a Date, Time, Age, Duration annotation. Or Treatment/Procedure mention */
+/* Should probably merge this with temporal_vague.lst and flag which are frequency */
+after;type=after
+afterwards;type=after
+ago;type=before
+and;type=overlap
+at;type=overlap
+before;type=before
+beforehand;type=before
+begin;type=before
+begins;type=before
+beginning;type=before
+began;type=before
+begun;type=before
+by;type=before_overlap
+during;type=during
+earlier;type=before
+early;type=before
+end;type=after
+ended;type=after
+ending;type=after
+final;type=after
+finally;type=after
+finish;type=after
+finishes;type=after
+finished;type=after
+finishing;type=after
+first;type=before
+follow;type=after
+follows;type=after
+following;type=after
+for;type=during
+from;type=before
+future;type=after
+in time
+in a;type=after
+initial;type=before
+initially;type=before
+instantly;type=before
+last;type=before
+last time;type=before
+late
+later;type=after
+long time
+momentarily
+next;type=after
+next time;type=after
+now;type=overlap
+of;type=ended_by
+on;type=ended_by
+on or after;type=during
+on or before;type=overlap
+or;type=overlap
+only
+onset
+past;type=before
+post;type=after
+post-;type=after
+precede;type=before
+previous;type=before
+previously;type=before
+prior;type=before
+prior to;type=before
+proceed;type=after
+since;type=after
+soon
+start;type=before
+started;type=before
+starting;type=before
+still;type=overlap
+stop;type=after
+stopped;type=after
+stopping;type=after
+subsequent;type=after
+subsequently;type=after
+then;type=after
+throughout;type=during
+time of
+until;type=overlap
+wait
+waiting
+waited
+when;type=overlap
+while;type=overlap
+with;type=overlap
+yet;type=overlap

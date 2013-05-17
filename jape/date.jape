@@ -1,0 +1,412 @@
+/*
+*  
+* Filename: 		date.jape
+* Author:			Phil Gooch
+* Copyright:		Phil Gooch 2013
+*/
+
+Phase:	Date
+Input: Split Lookup Token Number Duration Day
+Options: control = appelt
+
+
+Macro: LONG_YEAR
+(
+	{Number@string ==~ "[1-2][0-9]{3}"} |
+	(
+		{Token.kind == punctuation, Token.string == "'"}
+		{Number@string ==~ "[0-9]{2}"}
+	)
+)
+
+Macro: YEAR
+(
+		{Token.string ==~ "[1-2][0-9]{3}"} |
+		{Token.string ==~ "[0-9]{2}"}
+)
+
+Macro: MONTH
+(
+	{Token.string ==~ "0?[1-9]"} |
+	{Token.string ==~ "1[0-2]"}
+)
+
+Macro: DATESEP
+(
+	{Token.kind == punctuation, Token.string == "/"} |
+	{Token.kind == punctuation, Token.string == "-"}
+)
+
+Macro: DAYOFMONTH
+(
+		{Token.string ==~ "0?[1-9]"} |
+		{Token.string ==~ "1[0-9]"} |
+		{Token.string ==~ "2[0-9]"} |
+		{Token.string ==~ "3[0-1]"}
+)
+
+Macro: DURING_YEAR_MONTH
+(
+	{Token.string ==~ "(?i)in|by|from|during|before|after|since"}
+	(
+		{Token.string ==~ "(?i)the"}
+		{Token.string ==~ "(?i)year|period"}
+	)?
+)
+
+Macro: DURING_DATE
+(
+	{Token.string ==~ "(?i)on|by|from|during|before|after|since"}
+)
+
+
+
+/* Match year only, e.g. 1956 */
+Rule: MatchYearOnly
+Priority: 0
+(DURING_YEAR_MONTH)
+(
+	(
+		LONG_YEAR
+	):year
+):dt
+-->
+  :dt.Date = {year=:year.Number@string, rule="MatchYearOnly", ambiguity = "Yes"}
+  
+  
+Rule: MatchLongYearRange
+(DURING_YEAR_MONTH)
+(
+	(LONG_YEAR):year1
+	{Token.subkind == dashpunct}
+	(LONG_YEAR | YEAR):year2
+):dt
+-->
+  :dt.Date = {from=:year1.Number@string, to=:year2.Number@string rule="MatchLongYearRange"}
+  
+  
+/* Match partial date e.g. February 2008 or September, 2007 */
+Rule: MatchPartialDate
+Priority: 0
+(
+	(
+		{Lookup.majorType == date, Lookup.minorType == month}
+	):month
+	(
+	{Token.string == ","}
+	)?
+	(LONG_YEAR):year
+):dt
+-->
+  :dt.Date = {month=:month.Lookup.month, year=:year.Number@string, rule="MatchPartialDate"}
+  
+
+/* Match seasonal date, e.g. summer 2012, Christmas Day 2009 */
+Rule: MatchSeasonDate
+Priority: 0
+(
+	(
+		{Lookup.majorType == date, Lookup.minorType == season}
+	):month
+	(
+	{Token.string == ","}
+| {Token.string == "(?i)of|in"}	)?
+	(LONG_YEAR)?:year
+):dt
+-->
+  :dt.Date = {month=:month.Lookup.month, day=:month.Lookup.day, year=:year.Number@string, rule="MatchSeasonDate"}
+  
+
+/* Match partial date e.g. January 30 */
+Rule: MatchPartialDate2
+Priority: 0
+(
+	(
+		{Lookup.majorType == date, Lookup.minorType == month}
+	):month
+	(
+		{Lookup.majorType == date, Lookup.minorType == day} |
+		(DAYOFMONTH)
+	):day
+):dt
+-->
+  :dt.Date = {month=:month.Lookup.month, day=:day.Token.string, rule="MatchPartialDate2"}
+
+
+Rule: MatchPartialDate3
+Priority: 0
+(
+	(
+		{Lookup.majorType == date, Lookup.minorType == day} |
+		(DAYOFMONTH)
+	):day
+	(
+		{Lookup.majorType == date, Lookup.minorType == month}
+	):month
+):dt
+-->
+  :dt.Date = {month=:month.Lookup.month, day=:day.Token.string, rule="MatchPartialDate3"}
+  
+  
+/* Matches 6 February 2008, 27th day of January 2009 */
+Rule: MatchDate
+Priority: 50
+(
+	(
+		{Day}
+		(
+	{Token.string == ","}
+	)?
+	)?
+	(
+		{Lookup.majorType == date, Lookup.minorType == day} |
+		(DAYOFMONTH)
+	):day
+	({Token.string ==~ "(?)day"})?
+	({Token.string ==~ "(?)of"})?
+	(
+		{Lookup.majorType == date, Lookup.minorType == month}
+	):month
+	(
+		{Token.string == ","}
+	)?
+	(LONG_YEAR):year
+):dt
+-->
+  :dt.Date = {day=:day.Lookup.day, day=:day.Token.string, month=:month.Lookup.month, year=:year.Number@string, rule="MatchDate"}
+
+
+
+/* Matches February 6, 2008 */
+Rule: MatchDate
+Priority: 50
+(
+	(
+		{Day}
+		(
+	{Token.string == ","}
+	)?
+	)?
+	(
+		{Lookup.majorType == date, Lookup.minorType == month}
+	):month
+	(
+		{Lookup.majorType == date, Lookup.minorType == day} |
+		(DAYOFMONTH)
+	):day
+	(
+		{Token.string == ","}
+	)?
+	(LONG_YEAR):year
+):dt
+-->
+  :dt.Date = {day=:day.Lookup.day, day=:day.Token.string, month=:month.Lookup.month, year=:year.Number@string, rule="MatchDate"}
+
+  
+  
+/* Matches UK date in dd/mm/yyyy, dd/mm/yy, dd-mm-yyyy or dd-mm-yy format */
+/*
+Rule: MatchUKDate
+({Token.category == IN})?
+(
+	(DAYOFMONTH):day
+	(DATESEP)
+	(MONTH):month
+	(DATESEP)
+	(YEAR):year
+):dt
+-->
+  :dt.Date = {day=:day.Token.string, month=:month.Token.string, year=:year.Token.string, rule="MatchUKDate"}
+*/
+ 
+
+/* Matches US date in mm/dd, mm-dd */
+Rule: MatchUSDatePartial
+Priority: 50
+(DURING_DATE)
+(
+  	(MONTH):month
+	(DATESEP)
+	(DAYOFMONTH):day
+):dt
+-->
+  :dt.Date = {day=:day.Token.string, month=:month.Token.string, rule="MatchUSDatePartial"}
+  
+  
+/* Matches US date in mm/dd/yyyy, mm/dd/yy, mm-dd-yyyy or mm-dd-yy format */
+Rule: MatchUSDate
+Priority: 50
+(DURING_DATE)?
+(
+  	(MONTH):month
+	(DATESEP)
+	(DAYOFMONTH):day
+	(DATESEP)
+	(YEAR):year
+):dt
+-->
+  :dt.Date = {day=:day.Token.string, month=:month.Token.string, year=:year.Token.string, rule="MatchUSDate"}
+  
+
+/* Matches partial date in mm/yy or mm-yy format */
+Rule: MatchPartialMonthYearDate
+Priority: 50
+(DURING_YEAR_MONTH)
+(
+  	(MONTH):month
+	(DATESEP)
+	(YEAR):year
+):dt
+-->
+  :dt.Date = {month=:month.Token.string, year=:year.Token.string, rule="MatchPartialMonthYearDate"}
+  
+  
+/* Matches date in yyyy-mm-dd format */
+Rule: MatchDate3
+Priority: 50
+({Token.category == IN})?
+(	
+	(
+		{Token.kind == number, Token.string ==~ "[1-2][0-9]{3}"}
+	):year
+	(DATESEP)
+	(MONTH):month
+	(DATESEP)
+	(DAYOFMONTH):day
+):dt
+-->
+  :dt.Date = {day=:day.Token.string, month=:month.Token.string, year=:year.Token.string, rule="MatchDate3"}
+ 
+ 
+/* Matches date in yyyymmdd format */
+Rule: MatchDate4
+Priority: 50
+({Token.category == IN})?
+(	
+	(
+		{Token.kind == number, Token.string ==~ "[1-2][0-9]{3}((0?[1-9])|(1[0-2]))((0?[1-9])|(1[0-9])|(2[0-9])|(3[0-1]))"}
+	):date
+):dt
+-->
+:dt {
+	Annotation dtAnn = dtAnnots.iterator().next();
+	Long dtStartOffset = dtAnn.getStartNode().getOffset();
+    Long dtEndOffset = dtAnn.getEndNode().getOffset();
+	String dt = doc.getContent().toString().substring(dtStartOffset.intValue(), dtEndOffset.intValue());
+	String year = dt.substring(0, 4);
+	String month = dt.substring(4, 6);
+	String day = dt.substring(6, 8);
+  	
+  	FeatureMap fm = Factory.newFeatureMap();
+	fm.put("year", year );
+	fm.put("month", month );
+	fm.put("day", day );
+	outputAS.add(dtAnnots.firstNode(), dtAnnots.lastNode(), "Date", fm);
+}
+ 
+ 
+ 
+ 
+ /* 4th day, 3rd postoperative day, second month */
+ Rule: MatchRelativeDate
+ Priority: 50
+ (
+ 	(
+ 		{Lookup.majorType == date, Lookup.minorType == day}
+ 	):day
+ 	({!Token.category == IN, !Number})?
+ 	({Lookup.majorType == time, Lookup.minorType == duration, Lookup.prefix == P}):interval
+ ):dt
+-->
+  :dt.Date-Rel = {count=:day.Lookup.day, duration=:interval.Lookup.count, interval=:interval.Lookup.type, rule="MatchRelativeDate"}
+  
+  
+/* Day 4, Week 5, day number 4, day #3 etc */
+ Rule: MatchRelativeDate2
+ Priority: 100
+ (
+ 	({Lookup.majorType == time, Lookup.minorType == duration, Lookup.prefix == P}):interval
+ 	({!Token.category == IN, !Number})?
+ 	(
+ 		{Number}
+ 	):day
+ ):dt
+-->
+  :dt.Date-Rel = {count=:day.Number.value, duration=:interval.Lookup.count, interval=:interval.Lookup.type, rule="MatchRelativeDate2"}
+  
+  
+  
+
+/* E.g. the present time, at that time - will be coreferenced against most recent antecedent Date or Time */
+Rule: MatchRelativeDateDefiniteDescriptor
+Priority: 50
+{Token.category == IN}
+({Token.category == DT})?
+(
+	{Token.string ==~ "(?i)this|that|which|these|present|current"}
+	{Token.string ==~ "(?i)date(s)|instance(s)|moment(s)?|occasion(s)?|time(s)?|point"}
+	(
+		{Token.string ==~ "(?i)of"}
+		{Token.string ==~ "(?i)time"}
+	)?	
+):dt
+-->
+	:dt.Date-Coref = {rule="MatchRelativeDateDefiniteDescriptor"}
+
+
+
+Rule: MatchRelativeDateDefiniteDescriptor2
+Priority: 50
+{Token.category == IN}
+(
+	{Token.category == DT}
+	{Token.string ==~ "(?i)time"}
+):dt
+-->
+	:dt.Date-Coref = {rule="MatchRelativeDateDefiniteDescriptor2"}
+
+
+
+/* E.g. six years ago */
+Rule: MatchRelativeDatePost
+Priority: 10
+{!Token.string ==~ "(?i)for|during"}
+(
+	({Duration}):dur
+	({Lookup.majorType == temporal_relation, Lookup.type =~ "^(after|before)"}):rel
+):dt
+-->
+	:dt.Date-Rel = {rel=:rel.Lookup.type, mod=:dur.Duration.mod, count=:dur.Duration.duration, duration=:dur.Duration.count, interval=:dur.Duration.type, rule="MatchRelativeDatePost"}
+	
+
+/* Last day/month/week/year */ 
+Rule: MatchRelativeInterval
+Priority: 50
+{!Token.category == DT}
+(
+	({Lookup.majorType == temporal_relation, Lookup.type =~ "^(after|before)"}):rel
+ 	({Lookup.majorType == time, Lookup.minorType == duration, Lookup.prefix == P}):interval
+ 	(
+ 		({Token, !Number})?
+		{Number}
+	)?:day
+):dt
+-->
+  :dt.Date-Rel = {interval=:interval.Lookup.type, count=:day.Number.value, duration=:interval.Lookup.count, rel=:rel.Lookup.type, rule="MatchRelativeInterval"}
+
+
+
+/* E.g. on the following day, at 4pm the next day */
+Rule: MatchNextDay
+Priority: 50
+(DURING_DATE)?
+(
+  {Token.category == DT}
+  ({Lookup.majorType == temporal_relation} ):rel
+  (
+  	{Lookup.majorType == date, Lookup.minorType == day} |
+  	{Lookup.majorType == time, Lookup.minorType == duration}
+  ):interval
+):duration
+-->
+	:duration.Date-Rel = { rel=:rel.Lookup.type, interval=:interval.Lookup.type, duration=:interval.Lookup.count, rule="MatchNextDay"}

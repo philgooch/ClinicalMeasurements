@@ -1,0 +1,63 @@
+Imports: {
+	import static gate.Utils.*;
+	import java.io.*;
+}
+
+
+Phase:	TimexModifier
+Input:  Split Token Lookup Date Duration Time Frequency
+Options: control = appelt
+
+
+MACRO: MODIFIER
+(
+	{Lookup.majorType == value_modifier}
+)
+
+
+MACRO: ADD_MODIFIER
+:time {
+	AnnotationSet lookupAS = bindings.get("mod");
+	Annotation lookupAnn = lookupAS.iterator().next();
+	String mod = (String)lookupAnn.getFeatures().get("type");
+	
+	for (Annotation ann : timeAnnots) {
+		FeatureMap fm = ann.getFeatures();
+		if ( mod != null ) {
+			fm.put("mod", mod);
+		}
+	}	
+}
+
+
+Rule: MatchModBefore
+(MODIFIER):mod
+({Token})?
+(
+	(
+		{Date} |
+		{Time} |
+		{Duration} |
+		{Frequency}
+	)
+):time
+-->ADD_MODIFIER
+
+
+Rule: MatchModAfter
+(MODIFIER)?
+({Token})?
+(
+	(
+		{Date} |
+		{Time} |
+		{Duration} |
+		{Frequency}
+	)
+):time
+({Token})?
+(MODIFIER):mod
+-->ADD_MODIFIER
+
+
+

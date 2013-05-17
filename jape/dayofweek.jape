@@ -1,0 +1,39 @@
+/*
+*  
+* Filename: 		dayofweek.jape
+* Author:			Phil Gooch
+* Copyright:		Phil Gooch 2009
+* Description:		Annotates days of the week
+* Date created:		27/10/2009
+* This version:		0.1
+* 
+* 
+* Change history
+* ==========================================================================
+* Date				Version			Author				Description
+* ==========================================================================
+* 
+*/
+
+
+Phase:	DayOfWeek
+Input:  Split Token Lookup
+Options: control = appelt
+
+
+Rule: MatchDayofWeek
+(
+  {Lookup.majorType == date, Lookup.minorType == dayofweek}
+):day
+-->
+	:day.Day = {Day=:day.Lookup.day, rule="MatchDayofWeek" }
+	
+	
+/* e.g. today, tomorrow */	
+Rule: MatchRelativeDay
+Priority: 100
+(
+  {Lookup.majorType == date, Lookup.minorType == dayofweek, Lookup.day == rel}
+):day
+-->
+	:day.Date-Rel = {duration=:day.Lookup.count, interval="D", rule="MatchRelativeDay" }

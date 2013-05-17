@@ -1,0 +1,11 @@
+﻿Pa;unit=Pa;count=1
+kPa;unit=Pa;count=1000
+atm;unit=atm;count=1
+atmospheres;unit=atm;count=1
+bar;unit=bar;count=1
+decibar;unit=bar;count=0.1
+millibar;unit=bar;count=0.001
+mbar;unit=bar;count=0.001
+mmHg;unit=torr;count=1
+mm Hg;unit=torr;count=1
+torr;unit=torr;count=1

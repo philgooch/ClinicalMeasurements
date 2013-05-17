@@ -1,0 +1,19 @@
+/* this ..., in the ... */
+season
+spring;month=04
+summer;month=07
+autumn;month=10
+the fall;month=10
+winter;month=01
+holiday
+Labor Day;month=09
+New Year;month=01;day=01
+New Year's Day;month=01;day=01
+New Year's Eve;month=12;day=31
+Christmas Eve;month=12;day=24
+Christmas Day;month=12;day=25
+Boxing Day;month=12;day=26
+Thanksgiving;month=11
+Easter;month=04
+Christmas;month=12;day=25
+XMas;month=12;day=25
